@@ -1,0 +1,233 @@
+---
+title: "279-keywords"
+format: html
+editor: visual
+---
+```{r}
+library(rvest)
+library(httr)
+library(dplyr)
+library(SnowballC)
+library(tm) 
+library(stringr)
+```
+
+### Step1: Get all pmid. 
+1. create a function to get mid information from each website page. And then, we can create urls based on each unique pmid, and direct to each page, extract down the keywords. 
+
+```{r}
+get_pmid <- function(url) {
+  page <- read_html(url)
+  pmid <- page |>
+    html_nodes('.docsum-pmid') |>
+    html_text(trim = TRUE)
+  return(data.frame(pmid = pmid))
+}
+```
+
+
+2. create urls for all pages. 
+```{r}
+page_numbers <- 2:89
+page_urls <- paste0("https://pubmed.ncbi.nlm.nih.gov/trending/?filter=simsearch1.fha&filter=years.2022-2024&page=", page_numbers)
+```
+
+3. create a whole dataframe for pmid 
+```{r}
+all_pmid <- list()
+for (url in page_urls) {
+  pmid_df <- tryCatch({
+    get_pmid(url)
+  }, error = function(e) {
+    return(data.frame(pmid = character(0))) 
+  })
+  all_pmid[[url]] <- pmid_df
+}
+final_pmid_df <- bind_rows(all_pmid)
+final_pmid_df 
+```
+
+
+4. now we get all the pmid, and we can create urls that direct to each passage page. 
+```{r}
+passage_urls <- paste0("https://pubmed.ncbi.nlm.nih.gov/", final_pmid_df$pmid, "/")
+```
+
+
+```{r}
+get_keywords <- function(url) {
+  page <- read_html(url)
+  
+  keyword_nodes <- page |>
+    html_nodes(xpath = "//strong[contains(text(), 'Keywords:')]/parent::p")
+  if (length(keyword_nodes) == 0) {
+    return(NULL)
+  } else {
+    keyword_paragraph <- html_text(keyword_nodes, trim = TRUE)
+    keyword_text <- sub("Keywords:\\s*", "", keyword_paragraph)
+    keyword_text <- gsub("\\.$", "", keyword_text)
+    keywords <- strsplit(keyword_text, ";\\s*")[[1]]
+    return(data.frame(keywords = keywords))
+  }
+}
+```
+
+
+```{r}
+all_keywords <- list()
+for (url in passage_urls) {
+  keywords_df <- tryCatch({
+    get_keywords(url)
+  }, error = function(e) {
+    message(paste("Error in get_keywords for URL:", url, "Error:", e$message))
+    return(data.frame(keywords = NA))
+  })
+  all_keywords[[url]] <- keywords_df
+}
+final_keywords_df <- bind_rows(all_keywords)
+```
+
+
+```{r}
+final_keywords_df
+```
+
+```{r}
+final_keywords_df$keywords <- tolower(final_keywords_df$keywords)
+
+keyword_frequency <- final_keywords_df |>
+  count(keywords, sort = TRUE) 
+print(keyword_frequency)
+```
+
+Keywords Visualization 
+
+```{r}
+top_keywords <- head(keyword_frequency, 20)
+```
+
+```{r}
+library(ggplot2)
+ggplot(top_keywords, aes(x = reorder(keywords, n), y = n)) +
+  geom_bar(stat = "identity") +
+  xlab("Keywords") +
+  ylab("Frequency") +
+  coord_flip() +  # Flip the x and y axes for easier reading of labels
+  theme_minimal() +
+  ggtitle("Top 20 Keywords Distribution")
+
+```
+
+
+
+Data2: 
+Google Scholar data: 
+```{r}
+base_url_template <- "https://scholar.google.com/scholar?start=%d&q=medicine&hl=en&as_sdt=0,34&as_ylo=2022&as_yhi=2024"
+
+start_values <- seq(0, by = 10, length.out = 200)
+url_list <- sprintf(base_url_template, start_values)
+```
+
+
+```{r}
+get_highlighted_titles <- function(url) {
+  page <- read_html(url)
+  titles <- page |>
+    html_nodes('h3.gs_rt a') |>
+    html_text(trim = TRUE)
+  return(titles)
+}
+```
+
+
+```{r}
+all_titles <- list()
+
+for (url in url_list) {
+  Sys.sleep(20)  # Add a delay because I encounter 429 error. 
+  titles_vector <- tryCatch({
+    get_highlighted_titles(url)
+  }, error = function(e) {
+    message(paste("Error in get_highlighted_titles for URL:", url, "Error:", e$message))
+    return(character(0))
+  })
+  
+  all_titles[[url]] <- data.frame(title = titles_vector)
+}
+final_titles_df <- bind_rows(all_titles)
+print(final_titles_df)
+```
+
+
+
+```{r}
+titles_df <- final_titles_df |>
+  mutate(clean_title = tolower(title),
+         clean_title = str_remove_all(clean_title, "[.,:]"))  
+stop_words <- stopwords("en")
+```
+
+
+```{r}
+# function to remove stop words. 
+remove_stop_words <- function(string) {
+  words <- str_split(string, "\\s+") |> unlist()
+  words <- words[!words %in% stop_words]
+  return(paste(words, collapse = " "))
+}
+```
+
+
+```{r}
+update_titles <- sapply(titles_df$clean_title, remove_stop_words)
+titles_df$clean_title <- update_titles
+
+word_list <- unlist(str_split(titles_df$clean_title, "\\s+"), use.names = FALSE)
+word_df <- data.frame(word = word_list, stringsAsFactors = FALSE)
+word_freq <- word_df |>
+  group_by(word) |>
+  summarise(count = n()) |>
+  arrange(desc(count))
+```
+
+```{r}
+print(word_freq)
+```
+
+```{r}
+categories <- list(
+  MedicineAndClinical = c("clinical", "surgery", "treatment", "therapy", "patient", "trial", "care", "vaccine", "transplantation", "pediatric", "nursing", "surgical", "pharmacology", "rehabilitation", "prognosis", "diagnosis", "anesthesia", "radiology","medicine"),
+  HealthConditions = c("covid-19", "cancer", "diabetes", "infection", "alzheimer’s", "cardiovascular", "obesity", "depression", "hypertension", "arthritis", "diseases","pandemic","sars-cov-2"),
+  BiomedicalScience = c("biotechnology", "genomics", "molecular", "cell", "biomarkers", "microbiome", "genetics", "neurology"),
+  TechnologyInnovation = c("artificial intelligence", "machine learning", "data", "algorithm", "neural network", "imaging", "bioinformatics","precision","chatgpt","language","learning"),
+  HealthSystemsPolicy = c("healthcare", "policy", "public health", "global health", "health system", "insurance", "medicaid", "medicare"),
+  Other = c("other")  
+)
+```
+
+
+```{r}
+find_category_approx <- function(word, categories, max.distance = 0.3) {
+  for (category_name in names(categories)) {
+    if (any(agrep(word, categories[[category_name]], max.distance = max.distance, value = FALSE))) {
+      return(category_name)
+    }
+  }
+  return("Other") 
+}
+```
+
+
+```{r}
+find_category_vect = Vectorize(find_category_approx, vectorize.args = "word")
+
+word_freq <- word_freq |>
+  mutate(category = sapply(word, find_category_vect, categories = categories)) %>%
+  group_by(category) %>%
+  summarise(total_count = sum(count), .groups = 'drop') %>%
+  arrange(desc(total_count))
+
+print(word_freq)
+```
+
