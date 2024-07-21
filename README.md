@@ -45,4 +45,17 @@ data” appear a lot.
 them as “stop words” , remove them from the text dataframe, and analyze the
 occurrence of each word. The frequencies of words are shown below. 
 ![Alt Text](figure/figure3.png)
+
+
+Since article titles contain more words and do not give as precise a description as keywords, I
+define five categories in the medical field: medicine and clinical (it involves surgery, anesthesia,
+medical treatment, therapies) ; health conditions (it refers to specific diseases: covid-19, cancer,
+diabetes, infections, Alzheimer’s ) , technology and innovation (artificial intelligence, data),
+biomedical science (biological processes and mechanism), health policy. And then based on the
+similarity between words and each group, assign each word to the group. If the word is not
+similar to any one of the groups, assign it to “other”. It turns out that there are many distracting
+words in titles, and out of those meaningful words, medicine and clinical, health conditions, and
+technology occupy the largest area, which aligns with our finding in the first data source.
+
+
  
