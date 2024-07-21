@@ -44,6 +44,5 @@ data” appear a lot.
 2000 article titles have been scrapped. I remove some usual meaningless words, identify
 them as “stop words” , remove them from the text dataframe, and analyze the
 occurrence of each word. The frequencies of words are shown below. 
-
- 
+![Alt Text](figure/figure3.png)
  
