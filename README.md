@@ -20,6 +20,30 @@ determine where my data analysis skills could be most effectively applied.
   2022&as_yhi=2024_.
 
  ### Results:
- From Pubmed, Out of 907 articles, 853 contain keyword sections, here is the highly frequent keywords found.
+**A. From Pubmed**, Out of 907 articles, 853 contain keyword sections, here is the highly frequent keywords found.
+
+ ### Figure 1: Top 20 Keywords Frequency
+
+![Alt Text](figure/Figure2.png)
+
+From the keyword, we can see that several key trends are prominent in recent medical research. 
+First: **immunotherapy and cancer research**
+The consistent mention of terms such as immunotherapy, tumor microenvironment, and various forms of cancer indicates a strong focus on developing and refining
+immunotherapies. 
+And also, with multiple terms related to Alzheimer’s disease, Parkinson’s
+disease, and neurodegeneration, there is a clear underscore on these diseases’s **pathophysiology**.
+
+Topics like myocardial infarction, heart failure, and hypertension highlights the
+ongoing research into **cardiovascular health**, one of the leading causes of death worldwide. We
+can also identify the research interest in **metabolic disorder** from terms like “type 2 diabetes,
+insulin resistance.”, and with interest in genetic studies from terms “genetic testing, GWAS”. And
+one big area of focus is **technology**. Terms such as “artificial intelligence, machine learning, and
+data” appear a lot. 
+
+**B. From Google Scholar**
+2000 article titles have been scrapped. I remove some usual meaningless words, identify
+them as “stop words” , remove them from the text dataframe, and analyze the
+occurrence of each word. The frequencies of words are shown below. 
+
  
  
