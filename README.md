@@ -57,5 +57,5 @@ similar to any one of the groups, assign it to “other”. It turns out that th
 words in titles, and out of those meaningful words, medicine and clinical, health conditions, and
 technology occupy the largest area, which aligns with our finding in the first data source.
 
-
+![Alt Text](figure/figure4.png)
  
